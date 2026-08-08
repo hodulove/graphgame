@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>야르한 그래프게임</title>
-  <!-- Firebase SDK (실시간 데이터베이스용) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -315,7 +314,7 @@
       <div class="control-row">
         <div class="input-group">
           <label for="playerName">플레이어 이름</label>
-          <input type="text" id="playerName" value="유저1" maxlength="8">
+          <input type="text" id="playerName" value="" maxlength="12">
         </div>
         <div class="input-group">
           <label for="betAmount">배팅금 입력</label>
@@ -380,6 +379,19 @@
   let gameState = 'IDLE';
   let animationId = null;
   let startTime = 0;
+
+  function generateRandomName() {
+    const adjectives = ['용감한', '신난', '빠른', '느긋한', '귀여운', '화난', '행복한', '똑똑한', '배고픈', '엉뚱한', '조용한', '빛나는'];
+    const animals = ['사자', '호랑이', '토끼', '여우', '늑대', '곰', '고양이', '강아지', '수달', '판다', '독수리', '펭귄'];
+    
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    const num = Math.floor(Math.random() * 90 + 10);
+
+    return `${adj}${animal}${num}`;
+  }
+
+  nameInput.value = generateRandomName();
 
   function resizeCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
@@ -570,6 +582,7 @@
     multiplierEl.textContent = '1.00x';
     betInput.value = 1000;
     
+    nameInput.value = generateRandomName();
     nameInput.disabled = false;
     toggleControlInputs(false);
     
