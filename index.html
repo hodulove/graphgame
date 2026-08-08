@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>야르한 그래프게임</title>
+  <!-- Firebase SDK (실시간 데이터베이스용) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -379,6 +380,7 @@
   let gameState = 'IDLE';
   let animationId = null;
   let startTime = 0;
+  let isCustomName = false;
 
   function generateRandomName() {
     const adjectives = ['용감한', '신난', '빠른', '느긋한', '귀여운', '화난', '행복한', '똑똑한', '배고픈', '엉뚱한', '조용한', '빛나는'];
@@ -392,6 +394,10 @@
   }
 
   nameInput.value = generateRandomName();
+
+  nameInput.addEventListener('input', () => {
+    isCustomName = true;
+  });
 
   function resizeCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
@@ -582,7 +588,10 @@
     multiplierEl.textContent = '1.00x';
     betInput.value = 1000;
     
-    nameInput.value = generateRandomName();
+    if (!isCustomName) {
+      nameInput.value = generateRandomName();
+    }
+    
     nameInput.disabled = false;
     toggleControlInputs(false);
     
