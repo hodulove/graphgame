@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>야르한 그래프게임</title>
+  <!-- Firebase SDK (실시간 데이터베이스용) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    @media (min-width: 768px) {
+      .game-wrapper {
+        flex-direction: row;
+      }
+    }
+
+    .game-container {
+      flex: 2;
+      background-color: #1e293b;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .leaderboard-container {
+      flex: 1;
+      background-color: #1e293b;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .balance-box {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .history {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+    }
+
+    .history-tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      background-color: #334155;
+      white-space: nowrap;
+    }
+
+    .history-tag.win { color: #4ade80; }
+    .history-tag.loss { color: #f87171; }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      background-color: #0f172a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .multiplier-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+      pointer-events: none;
+    }
+
+    .multiplier-display.crashed {
+      color: #ef4444;
+      text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background-color: #0f172a;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: #38bdf8;
+    }
+
+    input:disabled {
+      background-color: #1e293b;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .bet-quick-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-quick {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background-color: #0f172a;
+      color: #cbd5e1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-quick:hover {
+      background-color: #334155;
+      color: #38bdf8;
+    }
+
+    .btn-quick.active {
+      border-color: #38bdf8;
+      background-color: #1e293b;
+      color: #38bdf8;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-start {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    .btn-start:hover {
+      background-color: #2563eb;
+    }
+
+    .btn-cashout {
+      background-color: #22c55e;
+      color: white;
+    }
+
+    .btn-cashout:hover {
+      background-color: #16a34a;
+    }
+
+    .btn-restart {
+      background-color: #eab308;
+      color: #000;
+    }
+
+    .btn-restart:hover {
+      background-color: #ca8a04;
+    }
+
+    .btn:disabled, .btn-quick:disabled {
+      background-color: #475569;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .leaderboard-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ranking-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .ranking-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background-color: #0f172a;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+
+    .rank-badge {
+      font-weight: 800;
+      font-size: 0.95rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .rank-1 { color: #facc15; }
+    .rank-2 { color: #e2e8f0; }
+    .rank-3 { color: #b45309; }
+    .rank-other { color: #64748b; }
+
+    .player-name {
+      font-weight: 600;
+      flex: 1;
+      margin-left: 10px;
+      color: #cbd5e1;
+    }
+
+    .player-score {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+  <div class="game-container">
+    <div class="header">
+      <h2>야르한 그래프게임</h2>
+      <div class="balance-box">돈: <span id="balance">10000</span>원</div>
+    </div>
+
+    <div class="history" id="history"></div>
+
+    <div class="canvas-wrapper">
+      <canvas id="graphCanvas"></canvas>
+      <div class="multiplier-display" id="multiplier">1.00x</div>
+    </div>
+
+    <div class="controls">
+      <div class="control-row">
+        <div class="input-group">
+          <label for="playerName">플레이어 이름</label>
+          <input type="text" id="playerName" value="유저1" maxlength="8">
+        </div>
+        <div class="input-group">
+          <label for="betAmount">배팅금 입력</label>
+          <input type="number" id="betAmount" value="1000" min="100" step="100">
+        </div>
+      </div>
+
+      <div class="bet-quick-btns">
+        <button class="btn-quick" onclick="setBetRatio(0.25)">1/4</button>
+        <button class="btn-quick" onclick="setBetRatio(0.5)">1/2</button>
+        <button class="btn-quick" onclick="setBetRatio(1.0)">올인</button>
+        <button class="btn-quick active" id="btnCustom" onclick="enableCustomBet()">직접입력</button>
+      </div>
+
+      <div class="control-row">
+        <button id="actionBtn" class="btn btn-start">배팅 시작</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="leaderboard-container">
+    <div class="leaderboard-title">
+      <span>🏆 실시간 랭킹 (Top 5)</span>
+    </div>
+    <ul class="ranking-list" id="rankingList"></ul>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAh4bUAFhegDeBiLceEjGa8kBJzwXbHoRQ",
+    authDomain: "graph-d60b0.firebaseapp.com",
+    databaseURL: "https://graph-d60b0-default-rtdb.firebaseio.com",
+    projectId: "graph-d60b0",
+    storageBucket: "graph-d60b0.firebasestorage.app",
+    messagingSenderId: "67540641313",
+    appId: "1:67540641313:web:05bf637a301786387da560",
+    measurementId: "G-LJP8DHJ3Q8"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const canvas = document.getElementById('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  const multiplierEl = document.getElementById('multiplier');
+  const balanceEl = document.getElementById('balance');
+  const nameInput = document.getElementById('playerName');
+  const betInput = document.getElementById('betAmount');
+  const actionBtn = document.getElementById('actionBtn');
+  const historyEl = document.getElementById('history');
+  const rankingListEl = document.getElementById('rankingList');
+  const quickBtns = document.querySelectorAll('.btn-quick');
+
+  const INITIAL_BALANCE = 10000;
+  const MIN_BET = 100;
+
+  let balance = INITIAL_BALANCE;
+  let currentBet = 0;
+  let currentMultiplier = 1.00;
+  let crashPoint = 0;
+  let gameState = 'IDLE';
+  let animationId = null;
+  let startTime = 0;
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function setBetRatio(ratio) {
+    if (gameState !== 'IDLE') return;
+    quickBtns.forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const calculatedBet = Math.floor(balance * ratio);
+    betInput.value = calculatedBet;
+    betInput.readOnly = true;
+  }
+
+  function enableCustomBet() {
+    if (gameState !== 'IDLE') return;
+    quickBtns.forEach(b => b.classList.remove('active'));
+    document.getElementById('btnCustom').classList.add('active');
+
+    betInput.readOnly = false;
+    betInput.focus();
+  }
+
+  function saveScoreToServer(playerName, score) {
+    if (!playerName.trim()) playerName = '무명';
+    const safeKey = playerName.replace(/[.#$[\]]/g, "_");
+    const playerRef = db.ref('rankings/' + safeKey);
+
+    playerRef.get().then((snapshot) => {
+      if (!snapshot.exists() || snapshot.val().score < score) {
+        playerRef.set({ name: playerName, score: score });
+      }
+    }).catch(err => console.error("점수 저장 실패:", err));
+  }
+
+  function initRealtimeLeaderboard() {
+    db.ref('rankings').orderByChild('score').limitToLast(5).on('value', (snapshot) => {
+      const rankings = [];
+      snapshot.forEach((child) => {
+        rankings.push(child.val());
+      });
+      rankings.reverse();
+      renderLeaderboard(rankings);
+    });
+  }
+
+  function renderLeaderboard(data) {
+    rankingListEl.innerHTML = '';
+    if (data.length === 0) {
+      rankingListEl.innerHTML = '<li class="ranking-item" style="color:#94a3b8; justify-content:center;">기록이 없습니다.</li>';
+      return;
+    }
+
+    data.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.className = 'ranking-item';
+
+      let rankClass = 'rank-other';
+      if (index === 0) rankClass = 'rank-1';
+      else if (index === 1) rankClass = 'rank-2';
+      else if (index === 2) rankClass = 'rank-3';
+
+      li.innerHTML = `
+        <span class="rank-badge ${rankClass}">${index + 1}</span>
+        <span class="player-name">${item.name}</span>
+        <span class="player-score">${item.score.toLocaleString()}원</span>
+      `;
+      rankingListEl.appendChild(li);
+    });
+  }
+
+  function generateCrashPoint() {
+    const e = 2 ** 32;
+    const h = crypto.getRandomValues(new Uint32Array(1))[0];
+    return Math.max(1.00, parseFloat(( (100 * e - h) / (e - h) / 100 ).toFixed(2)));
+  }
+
+  function drawGraph(progress) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padding = 40;
+    const width = canvas.width - padding;
+    const height = canvas.height - padding;
+
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, 10);
+    ctx.lineTo(padding, height);
+    ctx.lineTo(canvas.width - 10, height);
+    ctx.stroke();
+
+    if (gameState === 'IDLE' || gameState === 'BANKRUPT') return;
+
+    const endX = padding + Math.min(progress * (width / 5), width - 20);
+    const endY = height - Math.min((currentMultiplier - 1) * (height / 4), height - 20);
+
+    ctx.strokeStyle = gameState === 'CRASHED' ? '#ef4444' : '#38bdf8';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(padding, height);
+    ctx.quadraticCurveTo(padding + (endX - padding) / 2, height, endX, endY);
+    ctx.stroke();
+
+    ctx.fillStyle = gameState === 'CRASHED' ? '#ef4444' : '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(endX, endY, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function updateGame(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const elapsed = (timestamp - startTime) / 1000;
+
+    currentMultiplier = parseFloat((Math.pow(1.06, elapsed * 5)).toFixed(2));
+
+    if (currentMultiplier >= crashPoint) {
+      endGame(true);
+      return;
+    }
+
+    multiplierEl.textContent = `${currentMultiplier.toFixed(2)}x`;
+    drawGraph(elapsed);
+
+    if (gameState === 'RUNNING' || gameState === 'CASHED_OUT') {
+      animationId = requestAnimationFrame(updateGame);
+    }
+  }
+
+  function toggleControlInputs(disabled) {
+    betInput.disabled = disabled;
+    quickBtns.forEach(btn => btn.disabled = disabled);
+  }
+
+  function startGame() {
+    const bet = parseInt(betInput.value);
+    if (isNaN(bet) || bet < MIN_BET || bet > balance) {
+      alert(`최소 배팅금은 ${MIN_BET}원 이상이며 잔액을 초과할 수 없습니다.`);
+      return;
+    }
+
+    nameInput.disabled = true;
+
+    balance -= bet;
+    currentBet = bet;
+    balanceEl.textContent = balance.toLocaleString();
+
+    crashPoint = generateCrashPoint();
+    currentMultiplier = 1.00;
+    gameState = 'RUNNING';
+    startTime = 0;
+
+    multiplierEl.classList.remove('crashed');
+    multiplierEl.textContent = '1.00x';
+    
+    toggleControlInputs(true);
+
+    actionBtn.textContent = '출금하기';
+    actionBtn.className = 'btn btn-cashout';
+
+    animationId = requestAnimationFrame(updateGame);
+  }
+
+  function cashOut() {
+    if (gameState !== 'RUNNING') return;
+
+    gameState = 'CASHED_OUT';
+    const winAmount = Math.floor(currentBet * currentMultiplier);
+    balance += winAmount;
+    balanceEl.textContent = balance.toLocaleString();
+
+    saveScoreToServer(nameInput.value, balance);
+
+    actionBtn.disabled = true;
+    actionBtn.textContent = `+${winAmount.toLocaleString()}원 수령!`;
+    addHistory(currentMultiplier, true);
+  }
+
+  function resetGame() {
+    balance = INITIAL_BALANCE;
+    balanceEl.textContent = balance.toLocaleString();
+    gameState = 'IDLE';
+    multiplierEl.classList.remove('crashed');
+    multiplierEl.textContent = '1.00x';
+    betInput.value = 1000;
+    
+    nameInput.disabled = false;
+    toggleControlInputs(false);
+    
+    actionBtn.disabled = false;
+    actionBtn.textContent = '배팅 시작';
+    actionBtn.className = 'btn btn-start';
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGraph(0);
+  }
+
+  function endGame(isCrash) {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    if (isCrash) {
+      gameState = 'CRASHED';
+
+      currentMultiplier = crashPoint;
+      multiplierEl.textContent = `${crashPoint.toFixed(2)}x CRASH!`;
+      multiplierEl.classList.add('crashed');
+
+      const finalElapsed = (performance.now() - startTime) / 1000;
+      drawGraph(finalElapsed);
+
+      if (actionBtn.textContent === '출금하기') {
+        addHistory(crashPoint, false);
+      }
+    }
+
+    actionBtn.disabled = true;
+
+    if (balance < MIN_BET) {
+      setTimeout(() => {
+        gameState = 'BANKRUPT';
+        multiplierEl.textContent = '파산';
+        multiplierEl.classList.add('crashed');
+        
+        actionBtn.disabled = false;
+        actionBtn.textContent = '다시하기';
+        actionBtn.className = 'btn btn-restart';
+      }, 1500);
+    } else {
+      actionBtn.textContent = '게임 종료';
+      setTimeout(() => {
+        gameState = 'IDLE';
+        actionBtn.disabled = false;
+        actionBtn.textContent = '배팅 시작';
+        actionBtn.className = 'btn btn-start';
+        toggleControlInputs(false);
+      }, 1500);
+    }
+  }
+
+  function addHistory(multiplier, isWin) {
+    const tag = document.createElement('div');
+    tag.className = `history-tag ${isWin ? 'win' : 'loss'}`;
+    tag.textContent = `${multiplier.toFixed(2)}x`;
+    historyEl.prepend(tag);
+
+    if (historyEl.children.length > 8) {
+      historyEl.removeChild(historyEl.lastChild);
+    }
+  }
+
+  actionBtn.addEventListener('click', () => {
+    if (gameState === 'IDLE') {
+      startGame();
+    } else if (gameState === 'RUNNING') {
+      cashOut();
+    } else if (gameState === 'BANKRUPT') {
+      resetGame();
+    }
+  });
+
+  initRealtimeLeaderboard();
+</script>
+
+</body>
+</html>
