@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>야르한 그래프게임</title>
-  <!-- Firebase SDK (실시간 데이터베이스용) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -32,6 +31,7 @@
       gap: 20px;
       width: 100%;
       max-width: 900px;
+      align-items: stretch;
     }
 
     @media (min-width: 768px) {
@@ -46,13 +46,15 @@
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
     }
 
     .leaderboard-container {
       flex: 1;
       background-color: #1e293b;
       border-radius: 16px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
@@ -243,9 +245,9 @@
     }
 
     .leaderboard-title {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       color: #f8fafc;
       display: flex;
       align-items: center;
@@ -256,15 +258,16 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 12px;
+      gap: 6px;
+      flex: 1;
+      justify-content: space-between;
     }
 
     .ranking-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 14px;
+      padding: 8px 12px;
       background-color: #0f172a;
       border-radius: 8px;
       border: 1px solid #334155;
@@ -272,8 +275,8 @@
 
     .rank-badge {
       font-weight: 800;
-      font-size: 0.95rem;
-      width: 24px;
+      font-size: 0.85rem;
+      width: 20px;
       text-align: center;
     }
 
@@ -284,13 +287,18 @@
 
     .player-name {
       font-weight: 600;
+      font-size: 0.9rem;
       flex: 1;
-      margin-left: 10px;
+      margin-left: 8px;
       color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .player-score {
       font-weight: 700;
+      font-size: 0.9rem;
       color: #38bdf8;
     }
   </style>
@@ -338,7 +346,7 @@
 
   <div class="leaderboard-container">
     <div class="leaderboard-title">
-      <span>🏆 실시간 랭킹 (Top 5)</span>
+      <span>🏆 실시간 랭킹 (Top 10)</span>
     </div>
     <ul class="ranking-list" id="rankingList"></ul>
   </div>
@@ -438,7 +446,7 @@
   }
 
   function initRealtimeLeaderboard() {
-    db.ref('rankings').orderByChild('score').limitToLast(5).on('value', (snapshot) => {
+    db.ref('rankings').orderByChild('score').limitToLast(10).on('value', (snapshot) => {
       const rankings = [];
       snapshot.forEach((child) => {
         rankings.push(child.val());
