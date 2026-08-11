@@ -33,11 +33,17 @@
       gap: 20px;
       width: 100%;
       max-width: 900px;
-      align-items: stretch;
+    }
+
+    .game-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
     }
 
     @media (min-width: 768px) {
-      .game-wrapper {
+      .game-layout {
         flex-direction: row;
       }
     }
@@ -60,6 +66,76 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
+    }
+
+    .changelog-container {
+      background-color: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .changelog-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .changelog-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .changelog-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .changelog-list::-webkit-scrollbar-thumb {
+      background-color: #334155;
+      border-radius: 3px;
+    }
+
+    .changelog-item {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+
+    .changelog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .version-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      background-color: #0284c7;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .changelog-date {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .changelog-details {
+      list-style-type: disc;
+      list-style-position: inside;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.5;
     }
 
     .header {
@@ -308,53 +384,74 @@
 <body>
 
 <div class="game-wrapper">
-  <div class="game-container">
-    <div class="header">
-      <h2>야르한 그래프게임</h2>
-      <div class="balance-box">돈: <span id="balance">10000</span>원</div>
+  <div class="game-layout">
+    <div class="game-container">
+      <div class="header">
+        <h2>야르한 그래프게임</h2>
+        <div class="balance-box">돈: <span id="balance">10000</span>원</div>
+      </div>
+
+      <div class="history" id="history"></div>
+
+      <div class="canvas-wrapper">
+        <canvas id="graphCanvas"></canvas>
+        <div class="multiplier-display" id="multiplier">1.00x</div>
+      </div>
+
+      <div class="controls">
+        <div class="control-row">
+          <div class="input-group">
+            <label for="playerName">플레이어 이름</label>
+            <input type="text" id="playerName" value="" maxlength="12">
+          </div>
+          <div class="input-group">
+            <label for="betAmount">배팅금 입력</label>
+            <input type="number" id="betAmount" value="1000" min="100" step="100">
+          </div>
+        </div>
+
+        <div class="bet-quick-btns">
+          <button class="btn-quick" id="btnQuarter">1/4</button>
+          <button class="btn-quick" id="btnHalf">1/2</button>
+          <button class="btn-quick" id="btnAllIn">올인</button>
+          <button class="btn-quick active" id="btnCustom">직접입력</button>
+        </div>
+
+        <div class="control-row">
+          <button id="actionBtn" class="btn btn-start">배팅 시작</button>
+        </div>
+      </div>
     </div>
 
-    <div class="history" id="history"></div>
-
-    <div class="canvas-wrapper">
-      <canvas id="graphCanvas"></canvas>
-      <div class="multiplier-display" id="multiplier">1.00x</div>
-    </div>
-
-    <div class="controls">
-      <div class="control-row">
-        <div class="input-group">
-          <label for="playerName">플레이어 이름</label>
-          <input type="text" id="playerName" value="" maxlength="12">
-        </div>
-        <div class="input-group">
-          <label for="betAmount">배팅금 입력</label>
-          <input type="number" id="betAmount" value="1000" min="100" step="100">
-        </div>
+    <div class="leaderboard-container">
+      <div class="leaderboard-title">
+        <span>🏆 실시간 랭킹 (Top 10)</span>
       </div>
-
-      <div class="bet-quick-btns">
-        <button class="btn-quick" onclick="setBetRatio(0.25)">1/4</button>
-        <button class="btn-quick" onclick="setBetRatio(0.5)">1/2</button>
-        <button class="btn-quick" onclick="setBetRatio(1.0)">올인</button>
-        <button class="btn-quick active" id="btnCustom" onclick="enableCustomBet()">직접입력</button>
-      </div>
-
-      <div class="control-row">
-        <button id="actionBtn" class="btn btn-start">배팅 시작</button>
-      </div>
+      <ul class="ranking-list" id="rankingList"></ul>
     </div>
   </div>
 
-  <div class="leaderboard-container">
-    <div class="leaderboard-title">
-      <span>🏆 실시간 랭킹 (Top 10)</span>
+  <!-- 하단 패치노트 섹션 -->
+  <div class="changelog-container">
+    <div class="changelog-title">
+      <span>📋 업데이트 패치노트</span>
     </div>
-    <ul class="ranking-list" id="rankingList"></ul>
+    <div class="changelog-list">
+      <div class="changelog-item">
+        <div class="changelog-header">
+          <span class="version-tag">v1.2.0</span>
+          <span class="changelog-date">2026.02.23</span>
+        </div>
+        <ul class="changelog-details">
+          <li>핵쟁이 검거</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
+(function () {
   const firebaseConfig = {
     apiKey: "AIzaSyAh4bUAFhegDeBiLceEjGa8kBJzwXbHoRQ",
     authDomain: "graph-d60b0.firebaseapp.com",
@@ -517,10 +614,10 @@
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
-  function setBetRatio(ratio) {
+  function setBetRatio(ratio, targetBtn) {
     if (gameState !== 'IDLE') return;
     quickBtns.forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    targetBtn.classList.add('active');
 
     const calculatedBet = Math.floor(balance * ratio);
     betInput.value = calculatedBet;
@@ -535,6 +632,11 @@
     betInput.readOnly = false;
     betInput.focus();
   }
+
+  document.getElementById('btnQuarter').addEventListener('click', (e) => setBetRatio(0.25, e.target));
+  document.getElementById('btnHalf').addEventListener('click', (e) => setBetRatio(0.5, e.target));
+  document.getElementById('btnAllIn').addEventListener('click', (e) => setBetRatio(1.0, e.target));
+  document.getElementById('btnCustom').addEventListener('click', enableCustomBet);
 
   function saveScoreToServer(playerName, score) {
     if (!playerName.trim()) playerName = '무명';
@@ -793,6 +895,7 @@
   });
 
   initRealtimeLeaderboard();
+})();
 </script>
 
 </body>
