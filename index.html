@@ -431,7 +431,6 @@
     </div>
   </div>
 
-  <!-- 하단 패치노트 섹션 -->
   <div class="changelog-container">
     <div class="changelog-title">
       <span>📋 업데이트 패치노트</span>
@@ -452,6 +451,67 @@
 
 <script>
 (function () {
+  'use strict';
+
+  const INITIAL_BALANCE = 10000;
+  const MIN_BET = 100;
+  const _k = "Y4rh4n_G4m3_S3cr3t_" + Math.random();
+
+  function _hash(val) {
+    let str = String(val) + _k;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash.toString();
+  }
+
+  const Wallet = (function () {
+    let _b = INITIAL_BALANCE;
+    let _c = _hash(_b);
+
+    return {
+      get: function () {
+        if (_c !== _hash(_b)) {
+          this._onTampered();
+          return 0;
+        }
+        return _b;
+      },
+      add: function (amount) {
+        if (this.get() >= 0) {
+          _b += amount;
+          _c = _hash(_b);
+        }
+      },
+      subtract: function (amount) {
+        if (this.get() >= amount) {
+          _b -= amount;
+          _c = _hash(_b);
+          return true;
+        }
+        return false;
+      },
+      reset: function () {
+        _b = INITIAL_BALANCE;
+        _c = _hash(_b);
+      },
+      _onTampered: function () {
+        alert("데이터 변조가 감지되었습니다. 게임을 초기화합니다.");
+        window.location.reload();
+      }
+    };
+  })();
+
+  setInterval(function () {
+    const startTime = performance.now();
+    (function() {}["constructor"]("debugger")());
+    if (performance.now() - startTime > 100) {
+      Wallet._onTampered();
+    }
+  }, 1000);
+
   const firebaseConfig = {
     apiKey: "AIzaSyAh4bUAFhegDeBiLceEjGa8kBJzwXbHoRQ",
     authDomain: "graph-d60b0.firebaseapp.com",
@@ -477,10 +537,6 @@
   const rankingListEl = document.getElementById('rankingList');
   const quickBtns = document.querySelectorAll('.btn-quick');
 
-  const INITIAL_BALANCE = 10000;
-  const MIN_BET = 100;
-
-  let balance = INITIAL_BALANCE;
   let currentBet = 0;
   let currentMultiplier = 1.00;
   let crashPoint = 0;
@@ -619,7 +675,7 @@
     quickBtns.forEach(b => b.classList.remove('active'));
     targetBtn.classList.add('active');
 
-    const calculatedBet = Math.floor(balance * ratio);
+    const calculatedBet = Math.floor(Wallet.get() * ratio);
     betInput.value = calculatedBet;
     betInput.readOnly = true;
   }
@@ -759,16 +815,18 @@
     initAudio();
 
     const bet = parseInt(betInput.value);
-    if (isNaN(bet) || bet < MIN_BET || bet > balance) {
+    const currentBal = Wallet.get();
+
+    if (isNaN(bet) || bet < MIN_BET || bet > currentBal) {
       alert(`최소 배팅금은 ${MIN_BET}원 이상이며 잔액을 초과할 수 없습니다.`);
       return;
     }
 
     nameInput.disabled = true;
 
-    balance -= bet;
+    Wallet.subtract(bet);
     currentBet = bet;
-    balanceEl.textContent = balance.toLocaleString();
+    balanceEl.textContent = Wallet.get().toLocaleString();
 
     crashPoint = generateCrashPoint();
     currentMultiplier = 1.00;
@@ -794,10 +852,10 @@
     playWinSound();
 
     const winAmount = Math.floor(currentBet * currentMultiplier);
-    balance += winAmount;
-    balanceEl.textContent = balance.toLocaleString();
+    Wallet.add(winAmount);
+    balanceEl.textContent = Wallet.get().toLocaleString();
 
-    saveScoreToServer(nameInput.value, balance);
+    saveScoreToServer(nameInput.value, Wallet.get());
 
     actionBtn.disabled = true;
     actionBtn.textContent = `+${winAmount.toLocaleString()}원 수령!`;
@@ -805,8 +863,8 @@
   }
 
   function resetGame() {
-    balance = INITIAL_BALANCE;
-    balanceEl.textContent = balance.toLocaleString();
+    Wallet.reset();
+    balanceEl.textContent = Wallet.get().toLocaleString();
     gameState = 'IDLE';
     multiplierEl.classList.remove('crashed');
     multiplierEl.textContent = '1.00x';
@@ -851,7 +909,7 @@
 
     actionBtn.disabled = true;
 
-    if (balance < MIN_BET) {
+    if (Wallet.get() < MIN_BET) {
       setTimeout(() => {
         gameState = 'BANKRUPT';
         multiplierEl.textContent = '파산';
